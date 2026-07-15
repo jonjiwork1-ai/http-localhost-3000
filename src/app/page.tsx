@@ -109,10 +109,10 @@ export default function Home() {
     <div>
       {/* 히어로 섹션 */}
       <section className={styles.hero}>
-        <div className={styles.heroTagline}>PREMIUM INSIGHTS</div>
+        <div className={styles.heroTagline}>JONJI BLOG</div>
         <h1 className={styles.heroTitle}>
-          생각과 감각을 기록하는 <br />
-          <span className="gradient-text">AURA 아카이브</span>
+          조은지의 기록과 이야기 <br />
+          <span className="gradient-text">JONJI ARCHIVE</span>
         </h1>
         <p className={styles.heroDescription}>
           빛나는 순간들의 기록, 일상에서 수집한 시각적 영감과 깊이 있는 인사이트를 아름답고 미니멀한 공간에 나눕니다.
@@ -186,7 +186,7 @@ export default function Home() {
                     <div className={styles.meta}>
                       <div className={styles.authorInfo}>
                         <div className={styles.avatar} />
-                        <span>AURA Editor</span>
+                        <span>JONJI</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
                         <Calendar size={12} />

@@ -15,8 +15,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Aura Blog - 프리미엄 블로그 서비스",
-  description: "Supabase와 Next.js로 구축된 프리미엄 블로그 서비스입니다. 다양한 글과 사진을 감상해 보세요.",
+  title: "JONJI BLOG - 조은지의 블로그",
+  description: "조은지의 블로그입니다. 다양한 글과 사진을 감상해 보세요.",
 };
 
 export default function RootLayout({
@@ -31,7 +31,7 @@ export default function RootLayout({
           <header className={styles.header}>
             <Link href="/">
               <div className={styles.logo}>
-                <span>AURA</span>
+                <span>JONJI</span>
                 <span className="gradient-text">BLOG</span>
                 <div className={styles.logoDot} />
               </div>
@@ -52,11 +52,11 @@ export default function RootLayout({
           
           <footer className={styles.footer}>
             <div className={styles.logo} style={{ fontSize: '1.2rem' }}>
-              <span>AURA</span>
+              <span>JONJI</span>
               <span className="gradient-text">BLOG</span>
             </div>
             <p className={styles.footerText}>
-              &copy; {new Date().getFullYear()} AURA BLOG. All rights reserved.
+              &copy; {new Date().getFullYear()} JONJI BLOG. All rights reserved.
             </p>
           </footer>
         </div>
@@ -64,4 +64,3 @@ export default function RootLayout({
     </html>
   );
 }
-

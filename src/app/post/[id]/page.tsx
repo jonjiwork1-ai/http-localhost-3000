@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Calendar, BookOpen, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MessageCircle, Send } from "lucide-react";
 import styles from "./postDetail.module.css";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -16,6 +16,14 @@ interface Post {
   tags: string[];
   created_at: string;
   gallery_urls?: string[];
+}
+
+interface Comment {
+  id: string;
+  post_id: string;
+  author: string;
+  content: string;
+  created_at: string;
 }
 
 const MOCK_POSTS: Record<string, Post> = {
@@ -84,6 +92,14 @@ export default function PostDetailPage({ params }: PageProps) {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 댓글 상태
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentAuthor, setCommentAuthor] = useState("");
+  const [commentContent, setCommentContent] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [commentSuccess, setCommentSuccess] = useState(false);
+
   useEffect(() => {
     async function fetchPost() {
       try {
@@ -111,11 +127,11 @@ export default function PostDetailPage({ params }: PageProps) {
           }
         }
 
-        // 3. 둘 다 없으면 내장 Mock 데이터 제공
+        // 3. 내장 Mock 데이터 제공
         setPost(MOCK_POSTS[id] || null);
       } catch (err) {
         console.error("Error fetching post detail:", err);
-        setPost(MOCK_POSTS[id] || null); // 에러 발생 시 Mock 대응
+        setPost(MOCK_POSTS[id] || null);
       } finally {
         setLoading(false);
       }
@@ -124,8 +140,79 @@ export default function PostDetailPage({ params }: PageProps) {
     fetchPost();
   }, [id]);
 
+  useEffect(() => {
+    async function fetchComments() {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from("comments")
+        .select("*")
+        .eq("post_id", id)
+        .order("created_at", { ascending: true });
+      if (!error && data) {
+        setComments(data);
+      }
+    }
+    fetchComments();
+  }, [id]);
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentAuthor.trim() || !commentContent.trim()) {
+      setCommentError("이름과 댓글 내용을 모두 입력해 주세요.");
+      return;
+    }
+
+    setCommentLoading(true);
+    setCommentError(null);
+
+    if (supabase) {
+      const { data, error } = await supabase.from("comments").insert([
+        {
+          post_id: id,
+          author: commentAuthor.trim(),
+          content: commentContent.trim(),
+          created_at: new Date().toISOString(),
+        },
+      ]).select().single();
+
+      if (error) {
+        setCommentError("댓글 등록 중 오류가 발생했습니다.");
+        setCommentLoading(false);
+        return;
+      }
+
+      if (data) {
+        setComments((prev) => [...prev, data]);
+      }
+    } else {
+      // Mock 모드: 로컬 상태에만 추가
+      const mockComment: Comment = {
+        id: `local-comment-${Date.now()}`,
+        post_id: id,
+        author: commentAuthor.trim(),
+        content: commentContent.trim(),
+        created_at: new Date().toISOString(),
+      };
+      setComments((prev) => [...prev, mockComment]);
+    }
+
+    setCommentAuthor("");
+    setCommentContent("");
+    setCommentSuccess(true);
+    setCommentLoading(false);
+    setTimeout(() => setCommentSuccess(false), 3000);
+  };
+
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { year: "numeric", month: "long", day: "numeric" };
+    return new Date(dateString).toLocaleDateString("ko-KR", options);
+  };
+
+  const formatCommentDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    };
     return new Date(dateString).toLocaleDateString("ko-KR", options);
   };
 
@@ -176,7 +263,7 @@ export default function PostDetailPage({ params }: PageProps) {
           <div className={styles.meta}>
             <div className={styles.authorInfo}>
               <div className={styles.avatar} />
-              <span>AURA Editor</span>
+              <span>JONJI</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
               <Calendar size={14} />
@@ -214,7 +301,7 @@ export default function PostDetailPage({ params }: PageProps) {
           {post.content}
         </div>
 
-        {/* 갤러리 이미지 처리 */}
+        {/* 갤러리 이미지 */}
         {post.gallery_urls && post.gallery_urls.length > 0 && (
           <div className={styles.gallerySection}>
             <h3 className={styles.galleryTitle}>스토리 아카이브</h3>
@@ -233,6 +320,75 @@ export default function PostDetailPage({ params }: PageProps) {
           </div>
         )}
       </article>
+
+      {/* 댓글 섹션 */}
+      <section className={styles.commentSection}>
+        <h3 className={styles.commentSectionTitle}>
+          <MessageCircle size={20} />
+          <span>댓글 {comments.length > 0 ? `(${comments.length})` : ""}</span>
+        </h3>
+
+        {/* 댓글 목록 */}
+        {comments.length > 0 ? (
+          <div className={styles.commentList}>
+            {comments.map((comment) => (
+              <div key={comment.id} className={styles.commentItem}>
+                <div className={styles.commentHeader}>
+                  <div className={styles.commentAvatar}>
+                    {comment.author.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <span className={styles.commentAuthor}>{comment.author}</span>
+                    <span className={styles.commentDate}>{formatCommentDate(comment.created_at)}</span>
+                  </div>
+                </div>
+                <p className={styles.commentContent}>{comment.content}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.commentEmpty}>
+            첫 번째 댓글을 남겨보세요 🌿
+          </div>
+        )}
+
+        {/* 댓글 작성 폼 */}
+        <form className={styles.commentForm} onSubmit={handleCommentSubmit}>
+          {commentError && (
+            <div className={styles.commentAlert}>{commentError}</div>
+          )}
+          {commentSuccess && (
+            <div className={styles.commentAlertSuccess}>댓글이 등록되었습니다!</div>
+          )}
+          <input
+            type="text"
+            placeholder="이름"
+            value={commentAuthor}
+            onChange={(e) => setCommentAuthor(e.target.value)}
+            className={styles.commentInput}
+            maxLength={30}
+          />
+          <div className={styles.commentTextareaWrapper}>
+            <textarea
+              placeholder="따뜻한 댓글을 남겨주세요..."
+              value={commentContent}
+              onChange={(e) => setCommentContent(e.target.value)}
+              className={styles.commentTextarea}
+              rows={3}
+              maxLength={500}
+            />
+            <button
+              type="submit"
+              className={styles.commentSubmitBtn}
+              disabled={commentLoading}
+              id="comment-submit-btn"
+            >
+              <Send size={16} />
+              <span>{commentLoading ? "등록 중..." : "댓글 등록"}</span>
+            </button>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }
